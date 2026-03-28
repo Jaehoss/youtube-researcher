@@ -14,13 +14,16 @@ def extract_video_id(url: str) -> str | None:
         return parsed.path.lstrip("/").split("?")[0]
     return None
 
-def format_transcript_segments(segments: list[dict]) -> str:
+def format_transcript_segments(segments) -> str:
+    """Format transcript segments as '[MM:SS] text' lines. Accepts both dicts and FetchedTranscriptSnippet objects."""
     lines = []
     for seg in segments:
-        total_seconds = int(seg["start"])
+        start = seg["start"] if isinstance(seg, dict) else seg.start
+        text = seg["text"] if isinstance(seg, dict) else seg.text
+        total_seconds = int(start)
         minutes = total_seconds // 60
         seconds = total_seconds % 60
-        lines.append(f"[{minutes:02d}:{seconds:02d}] {seg['text']}")
+        lines.append(f"[{minutes:02d}:{seconds:02d}] {text}")
     return "\n".join(lines)
 
 def parse_iso8601_duration(duration: str) -> str:
@@ -37,17 +40,12 @@ def parse_iso8601_duration(duration: str) -> str:
 async def fetch_transcript(video_id: str, preferred_language: str = "en") -> str:
     import asyncio
     def _fetch_sync():
-        transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
-        try:
-            transcript = transcript_list.find_transcript([preferred_language])
-        except Exception:
-            transcript = transcript_list.find_transcript(
-                [t.language_code for t in transcript_list]
-            )
-        return transcript.fetch()
+        ytt = YouTubeTranscriptApi()
+        transcript = ytt.fetch(video_id, languages=[preferred_language, "en"])
+        return transcript
     try:
-        segments = await asyncio.to_thread(_fetch_sync)
-        formatted = format_transcript_segments(segments)
+        transcript = await asyncio.to_thread(_fetch_sync)
+        formatted = format_transcript_segments(transcript.snippets)
         if len(formatted) > 2_000_000:
             formatted = formatted[:2_000_000] + "\n\n[Transcript truncated due to length]"
         return formatted

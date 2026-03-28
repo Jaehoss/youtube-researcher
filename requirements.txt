@@ -5,7 +5,7 @@ aiosqlite
 google-genai
 anthropic
 openai
-youtube-transcript-api==0.6.3
+youtube-transcript-api>=1.0.0
 httpx
 python-dotenv
 sse-starlette
