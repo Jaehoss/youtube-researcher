@@ -8,7 +8,7 @@ def test_build_brief_prompt():
         transcript="[00:00] Hello world",
         video_url="https://youtube.com/watch?v=abc123",
     )
-    assert "one concise paragraph" in prompt
+    assert "comprehensive summary" in prompt
     assert "[00:00] Hello world" in prompt
     assert "English" in prompt
     assert "Tags: " in prompt

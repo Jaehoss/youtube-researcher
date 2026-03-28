@@ -56,10 +56,17 @@ def create_app(db_path: str | None = None) -> FastAPI:
     app = FastAPI(lifespan=lifespan)
 
     @app.get("/", response_class=HTMLResponse)
-    async def index(request: Request):
+    async def index(request: Request, tag: str | None = None):
         providers = get_available_providers(gemini_key, anthropic_key, openai_key)
+        summaries = await db.list_summaries(tag=tag)
+        all_tags = await db.list_tags()
+        for s in summaries:
+            s["tags"] = await db.get_tags_for_summary(s["id"])
         return templates.TemplateResponse(request, "index.html", {
             "providers": providers,
+            "summaries": summaries,
+            "all_tags": all_tags,
+            "selected_tag": tag,
         })
 
     @app.post("/summarize", response_class=HTMLResponse)

@@ -1,94 +1,144 @@
 {% extends "base.html" %}
 
 {% block content %}
-<form hx-post="/summarize"
-      hx-target="#result"
-      hx-swap="innerHTML"
-      hx-indicator="#loading"
-      class="bg-white rounded-xl shadow-sm border p-6 mb-6">
+<div class="flex gap-6">
+    <!-- Left Sidebar: History -->
+    <aside class="w-80 flex-shrink-0">
+        <div class="bg-white rounded-xl shadow-sm border p-4 sticky top-8">
+            <h2 class="font-bold text-gray-800 mb-3">History</h2>
 
-    <div class="mb-4">
-        <input type="url"
-               name="youtube_url"
-               placeholder="Paste YouTube URL here..."
-               value="{{ summary.video_id | default('', true) and 'https://youtube.com/watch?v=' ~ summary.video_id if summary else '' }}"
-               required
-               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
-        />
-    </div>
+            <!-- Tag filter -->
+            <div class="mb-3">
+                <select onchange="window.location.href = this.value ? '/?tag=' + this.value : '/'"
+                        class="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg bg-white">
+                    <option value="">All tags</option>
+                    {% for tag in all_tags %}
+                    <option value="{{ tag.name }}" {% if selected_tag == tag.name %}selected{% endif %}>
+                        {{ tag.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
 
-    <div class="flex flex-wrap gap-6 mb-4">
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Model</label>
-            <select name="provider" class="px-3 py-2 border border-gray-300 rounded-lg bg-white">
-                {% for key, name in providers.items() %}
-                <option value="{{ key }}">{{ name }}</option>
+            <!-- History list -->
+            <div class="space-y-2 max-h-[calc(100vh-200px)] overflow-y-auto" id="history-list">
+                {% for s in summaries %}
+                <a href="/history/{{ s.id }}"
+                   class="block p-3 rounded-lg hover:bg-blue-50 transition-colors border border-transparent hover:border-blue-200">
+                    <div class="flex gap-2">
+                        {% if s.thumbnail_url %}
+                        <img src="{{ s.thumbnail_url }}" class="w-16 h-10 object-cover rounded flex-shrink-0" />
+                        {% else %}
+                        <div class="w-16 h-10 bg-gray-200 rounded flex-shrink-0"></div>
+                        {% endif %}
+                        <div class="min-w-0 flex-1">
+                            <p class="text-sm font-medium text-gray-800 truncate">
+                                {{ s.title or 'Untitled' }}
+                            </p>
+                            <p class="text-xs text-gray-400">
+                                {{ s.created_at[:10] }} · {{ s.style }}
+                            </p>
+                        </div>
+                    </div>
+                    {% if s.tags %}
+                    <div class="flex flex-wrap gap-1 mt-1">
+                        {% for tag in s.tags %}
+                        <span class="bg-blue-100 text-blue-700 text-[10px] px-1.5 py-0.5 rounded">{{ tag.name }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </a>
+                {% else %}
+                <p class="text-sm text-gray-400 text-center py-4">No summaries yet</p>
                 {% endfor %}
-            </select>
-        </div>
-
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Style</label>
-            <div class="flex gap-4">
-                <label class="flex items-center gap-1">
-                    <input type="radio" name="style" value="brief" checked class="text-blue-600" />
-                    <span>Brief</span>
-                </label>
-                <label class="flex items-center gap-1">
-                    <input type="radio" name="style" value="structured" class="text-blue-600" />
-                    <span>Structured</span>
-                </label>
             </div>
         </div>
+    </aside>
 
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Language</label>
-            <div class="flex gap-4">
-                <label class="flex items-center gap-1">
-                    <input type="radio" name="language" value="en" checked class="text-blue-600" />
-                    <span>English</span>
-                </label>
-                <label class="flex items-center gap-1">
-                    <input type="radio" name="language" value="ko" class="text-blue-600" />
-                    <span>한국어</span>
-                </label>
+    <!-- Main Content -->
+    <main class="flex-1 min-w-0">
+        <form hx-post="/summarize"
+              hx-target="#result"
+              hx-swap="innerHTML"
+              class="bg-white rounded-xl shadow-sm border p-6 mb-6">
+
+            <div class="mb-4">
+                <input type="url"
+                       name="youtube_url"
+                       placeholder="Paste YouTube URL here..."
+                       value="{{ summary.video_id | default('', true) and 'https://youtube.com/watch?v=' ~ summary.video_id if summary else '' }}"
+                       required
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+                />
             </div>
-        </div>
-    </div>
 
-    <button type="submit"
-            class="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
-            onclick="this.disabled=true; this.form.requestSubmit(); setTimeout(() => this.disabled=false, 2000);">
-        Summarize
-    </button>
-</form>
+            <div class="flex flex-wrap gap-6 mb-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Model</label>
+                    <select name="provider" class="px-3 py-2 border border-gray-300 rounded-lg bg-white">
+                        {% for key, name in providers.items() %}
+                        <option value="{{ key }}">{{ name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
 
-<div id="loading" class="htmx-indicator text-center py-4">
-    <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-600 border-t-transparent"></div>
-    <p class="mt-2 text-gray-500">Fetching transcript...</p>
-</div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Style</label>
+                    <div class="flex gap-4">
+                        <label class="flex items-center gap-1">
+                            <input type="radio" name="style" value="brief" checked class="text-blue-600" />
+                            <span>Brief</span>
+                        </label>
+                        <label class="flex items-center gap-1">
+                            <input type="radio" name="style" value="structured" class="text-blue-600" />
+                            <span>Structured</span>
+                        </label>
+                    </div>
+                </div>
 
-<div id="result">
-    {% if summary %}
-    <div class="bg-white rounded-xl shadow-sm border p-6">
-        {% if summary.thumbnail_url %}
-        <img src="{{ summary.thumbnail_url }}" class="w-full max-w-md rounded-lg mb-2" />
-        {% endif %}
-        {% if summary.title %}
-        <h2 class="text-xl font-bold">{{ summary.title }}</h2>
-        {% endif %}
-        {% if summary.channel or summary.duration %}
-        <p class="text-gray-500">{{ [summary.channel, summary.duration] | select | join(' · ') }}</p>
-        {% endif %}
-        <div id="tags-container"
-             hx-target="this"
-             hx-swap="innerHTML">
-            {% include "partials/tags.html" %}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Language</label>
+                    <div class="flex gap-4">
+                        <label class="flex items-center gap-1">
+                            <input type="radio" name="language" value="en" checked class="text-blue-600" />
+                            <span>English</span>
+                        </label>
+                        <label class="flex items-center gap-1">
+                            <input type="radio" name="language" value="ko" class="text-blue-600" />
+                            <span>한국어</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit"
+                    class="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+                    onclick="this.disabled=true; this.form.requestSubmit(); setTimeout(() => this.disabled=false, 2000);">
+                Summarize
+            </button>
+        </form>
+
+        <div id="result">
+            {% if summary %}
+            <div class="bg-white rounded-xl shadow-sm border p-6">
+                {% if summary.thumbnail_url %}
+                <img src="{{ summary.thumbnail_url }}" class="w-full max-w-md rounded-lg mb-2" />
+                {% endif %}
+                {% if summary.title %}
+                <h2 class="text-xl font-bold">{{ summary.title }}</h2>
+                {% endif %}
+                {% if summary.channel or summary.duration %}
+                <p class="text-gray-500">{{ [summary.channel, summary.duration] | select | join(' · ') }}</p>
+                {% endif %}
+                <div id="tags-container" hx-target="this" hx-swap="innerHTML">
+                    {% include "partials/tags.html" %}
+                </div>
+                <div class="markdown-body mt-4">
+                    {{ summary.summary | safe }}
+                </div>
+            </div>
+            {% endif %}
         </div>
-        <div class="markdown-body mt-4">
-            {{ summary.summary | safe }}
-        </div>
-    </div>
-    {% endif %}
+    </main>
 </div>
 {% endblock %}
