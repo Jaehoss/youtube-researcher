@@ -6,6 +6,7 @@ google-genai
 anthropic
 openai
 youtube-transcript-api>=1.0.0
+yt-dlp
 httpx
 python-dotenv
 sse-starlette

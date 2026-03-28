@@ -213,10 +213,15 @@ async def _run_summarize(job, video_id, youtube_url, style, language, provider, 
         lang_code = "ko" if language == "ko" else "en"
         lang_name = "Korean" if language == "ko" else "English"
 
-        transcript_task = asyncio.create_task(fetch_transcript(video_id, lang_code))
         metadata_task = asyncio.create_task(fetch_video_metadata(video_id, youtube_key))
 
-        transcript = await transcript_task
+        # Try to fetch transcript, but don't fail if blocked — Gemini can watch the video directly
+        transcript = ""
+        try:
+            transcript = await fetch_transcript(video_id, lang_code)
+        except Exception:
+            pass  # Gemini will use the YouTube URL directly
+
         metadata = await metadata_task
         job.metadata = metadata
 

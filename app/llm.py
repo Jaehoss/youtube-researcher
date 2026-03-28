@@ -18,7 +18,11 @@ class GeminiClient(LLMClient):
 
     async def summarize_stream(self, transcript, style, language, video_url):
         from app.prompts import build_prompt
+        # Gemini can natively understand YouTube URLs — include it in the prompt
+        # so it can watch the video directly (visual + audio) alongside any transcript
         prompt = build_prompt(style, language, transcript, video_url)
+        if video_url:
+            prompt = f"YouTube video: {video_url}\n\n{prompt}"
         response = self.client.models.generate_content_stream(
             model=self.model, contents=prompt
         )
