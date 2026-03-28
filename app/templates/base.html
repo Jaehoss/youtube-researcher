@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Summary Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <script src="https://unpkg.com/htmx-ext-sse@2.3.0/sse.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.5.1/github-markdown-light.min.css">
+    <style>
+        .htmx-indicator { display: none; }
+        .htmx-request .htmx-indicator { display: inline-block; }
+        .htmx-request.htmx-indicator { display: inline-block; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="max-w-4xl mx-auto px-4 py-8">
+        <header class="flex justify-between items-center mb-8">
+            <a href="/" class="text-2xl font-bold text-gray-800 hover:text-gray-600">
+                YouTube Summary Generator
+            </a>
+            <a href="/history" class="text-blue-600 hover:text-blue-800 font-medium">
+                History
+            </a>
+        </header>
+        {% block content %}{% endblock %}
+        <footer class="mt-12 text-center text-gray-400 text-sm">
+            v1 &middot; Powered by Gemini, Claude &amp; GPT
+        </footer>
+    </div>
+</body>
+</html>

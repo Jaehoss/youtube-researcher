@@ -1,0 +1,28 @@
+<div class="flex flex-wrap gap-2 items-center mt-2">
+    {% for tag in tags %}
+    <span class="inline-flex items-center gap-1 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+        {{ tag.name }}
+        <button hx-delete="/history/{{ summary_id }}/tags/{{ tag.id }}"
+                hx-target="#tags-container"
+                hx-swap="innerHTML"
+                class="hover:text-red-600 ml-1">&times;</button>
+    </span>
+    {% endfor %}
+    <form hx-post="/history/{{ summary_id }}/tags"
+          hx-target="#tags-container"
+          hx-swap="innerHTML"
+          class="inline-flex items-center">
+        <input type="text"
+               name="name"
+               placeholder="+ add tag"
+               list="tag-suggestions"
+               class="text-xs border border-gray-300 rounded px-2 py-1 w-24 focus:w-40 transition-all focus:ring-1 focus:ring-blue-500" />
+        <datalist id="tag-suggestions"></datalist>
+    </form>
+</div>
+<script>
+    fetch('/tags').then(r => r.json()).then(tags => {
+        const dl = document.getElementById('tag-suggestions');
+        dl.innerHTML = tags.map(t => `<option value="${t}">`).join('');
+    });
+</script>

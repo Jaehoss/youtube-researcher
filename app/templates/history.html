@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="flex items-center gap-4 mb-6">
+    <a href="/" class="text-blue-600 hover:text-blue-800">&larr; Back</a>
+    <h1 class="text-xl font-bold">Summary History</h1>
+</div>
+
+<div class="mb-6">
+    <label class="text-sm font-medium text-gray-700 mr-2">Filter by tag:</label>
+    <select onchange="window.location.href = this.value ? '/history?tag=' + this.value : '/history'"
+            class="px-3 py-2 border border-gray-300 rounded-lg bg-white">
+        <option value="">All</option>
+        {% for tag in all_tags %}
+        <option value="{{ tag.name }}" {% if selected_tag == tag.name %}selected{% endif %}>
+            {{ tag.name }}
+        </option>
+        {% endfor %}
+    </select>
+</div>
+
+<div class="space-y-3">
+    {% for summary in summaries %}
+        {% include "partials/history_item.html" %}
+    {% else %}
+        <p class="text-gray-500 text-center py-8">No summaries yet. Go summarize some videos!</p>
+    {% endfor %}
+</div>
+{% endblock %}
