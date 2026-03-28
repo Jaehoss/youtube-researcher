@@ -1,38 +1,9 @@
 {% if streaming %}
-<div class="bg-white rounded-xl shadow-sm border p-6" id="summary-container">
+<div class="bg-white rounded-xl shadow-sm border p-6" id="summary-container" data-job-id="{{ job_id }}">
     <div id="stream-metadata"></div>
     <div class="markdown-body mt-4">
         <div id="stream-content"></div>
     </div>
     <div id="stream-error" class="text-red-500 font-medium"></div>
 </div>
-
-<script>
-(function() {
-    const source = new EventSource("/summarize/stream/{{ job_id }}");
-    const metadata = document.getElementById("stream-metadata");
-    const content = document.getElementById("stream-content");
-    const errorDiv = document.getElementById("stream-error");
-
-    source.addEventListener("metadata", function(e) {
-        metadata.innerHTML = e.data;
-    });
-
-    source.addEventListener("chunk", function(e) {
-        content.innerHTML += e.data;
-    });
-
-    source.addEventListener("done", function(e) {
-        content.innerHTML = e.data;
-        source.close();
-    });
-
-    source.addEventListener("error", function(e) {
-        if (e.data) {
-            errorDiv.textContent = e.data;
-        }
-        source.close();
-    });
-})();
-</script>
 {% endif %}

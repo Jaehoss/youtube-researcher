@@ -28,5 +28,39 @@
             v1 &middot; Powered by Gemini, Claude &amp; GPT
         </footer>
     </div>
+<script>
+document.body.addEventListener("htmx:afterSwap", function(event) {
+    var container = document.getElementById("summary-container");
+    if (!container || !container.dataset.jobId) return;
+
+    var jobId = container.dataset.jobId;
+    container.removeAttribute("data-job-id");
+
+    var source = new EventSource("/summarize/stream/" + jobId);
+    var metadata = document.getElementById("stream-metadata");
+    var content = document.getElementById("stream-content");
+    var errorDiv = document.getElementById("stream-error");
+
+    source.addEventListener("metadata", function(e) {
+        metadata.innerHTML = e.data;
+    });
+
+    source.addEventListener("chunk", function(e) {
+        content.innerHTML += e.data;
+    });
+
+    source.addEventListener("done", function(e) {
+        content.innerHTML = e.data;
+        source.close();
+    });
+
+    source.addEventListener("error", function(e) {
+        if (e.data) {
+            errorDiv.textContent = e.data;
+        }
+        source.close();
+    });
+});
+</script>
 </body>
 </html>
