@@ -25,7 +25,9 @@ A web application for generating AI-powered summaries of YouTube videos. Users p
 |-----------|--------|-----------|
 | Backend | FastAPI (Python) | Lightweight, async, great ecosystem for YouTube + Gemini libraries |
 | LLM (default) | Gemini 3.1 Pro (`google-generativeai`) | Free tier (25 req/day), 1M context, native video/audio for v2, cheapest paid tier ($2.00/M input) |
-| LLM (pluggable) | Abstract `LLMClient` interface | Allows adding Claude, GPT, or other providers later by implementing the interface |
+| LLM (alternate) | Claude Sonnet 4.6 (`anthropic`) | User has API key, best structured output quality, 1M context |
+| LLM (alternate) | GPT-5.4 (`openai`) | Strong all-rounder, 1M context, competitive pricing |
+| LLM (pluggable) | Abstract `LLMClient` interface | User selects provider from UI dropdown. Allows adding more providers later |
 | YouTube transcripts | `youtube-transcript-api` | No API key needed, supports multiple languages |
 | YouTube metadata | YouTube Data API v3 via `httpx` | Title, channel, thumbnail, duration. `httpx` is lighter than `google-api-python-client` |
 | Database | SQLite via `aiosqlite` | Zero setup, single file, perfect for personal use |
@@ -70,7 +72,7 @@ A web application for generating AI-powered summaries of YouTube videos. Users p
 
 Two-step pattern using an in-memory job store:
 
-1. `POST /summarize` validates input (form fields: `youtube_url`, `style`, `language`), creates a job (UUID) with an `asyncio.Queue` for chunk passing, starts the Gemini stream as a background `asyncio.Task`, and returns an HTML snippet containing an SSE connection element
+1. `POST /summarize` validates input (form fields: `youtube_url`, `style`, `language`, `provider`), creates a job (UUID) with an `asyncio.Queue` for chunk passing, starts the Gemini stream as a background `asyncio.Task`, and returns an HTML snippet containing an SSE connection element
 2. The background task reads from Gemini's streaming response and puts HTML chunks into the job's `asyncio.Queue`
 3. The HTML snippet uses `hx-ext="sse" sse-connect="/summarize/stream/{job_id}"` (GET) to consume the queue as SSE events
 4. Each SSE event (`event: chunk`) contains an HTML fragment appended to the summary container
@@ -119,7 +121,7 @@ class LLMClient(ABC):
 
 - `video_url` is passed so the model can generate correct timestamp links
 - Each provider implementation handles its own SDK (Gemini, Claude, OpenAI)
-- v1 ships with `GeminiClient` only; others added by implementing this interface
+- v1 ships with `GeminiClient`, `ClaudeClient`, and `OpenAIClient`; others added by implementing this interface
 - The tag-parsing logic lives outside the client (in the route handler), not inside
 
 ### Manual Tag UX
@@ -189,6 +191,7 @@ Foreign keys use `ON DELETE CASCADE` on `summary_id` so deleting a summary clean
 │                                          │
 │   [ Paste YouTube URL here         ]     │
 │                                          │
+│   Model: [Gemini 3.1 Pro ▼]              │
 │   Style: ○ Brief  ○ Structured           │
 │   Lang:  ○ English  ○ 한국어              │
 │                                          │
@@ -277,7 +280,7 @@ youtube-researcher/
 ├── app/
 │   ├── main.py              # FastAPI app, route definitions
 │   ├── database.py          # SQLite setup, query functions
-│   ├── llm.py               # Abstract LLMClient interface + Gemini 3.1 Pro implementation
+│   ├── llm.py               # Abstract LLMClient + Gemini/Claude/OpenAI implementations
 │   ├── youtube.py           # Transcript + metadata fetching
 │   ├── models.py            # Pydantic schemas
 │   └── templates/
@@ -304,8 +307,10 @@ youtube-researcher/
 | Variable | Description |
 |----------|-------------|
 | `GEMINI_API_KEY` | Google AI Studio API key for Gemini (free tier: 25 req/day for Pro) |
+| `ANTHROPIC_API_KEY` | Anthropic API key for Claude (optional, enables Claude provider) |
+| `OPENAI_API_KEY` | OpenAI API key for GPT (optional, enables GPT provider) |
 | `YOUTUBE_API_KEY` | YouTube Data API v3 key (free tier: ~3,000 lookups/day) |
-| `LLM_PROVIDER` | Optional. Default: `gemini`. Future: `claude`, `openai` |
+| `DEFAULT_LLM_PROVIDER` | Optional. Default: `gemini`. Also available: `claude`, `openai` |
 
 ### Dependencies (requirements.txt)
 
@@ -315,6 +320,8 @@ uvicorn[standard]
 jinja2
 aiosqlite
 google-generativeai
+anthropic
+openai
 youtube-transcript-api
 httpx
 python-dotenv
