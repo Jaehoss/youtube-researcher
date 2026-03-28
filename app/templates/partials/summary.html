@@ -1,9 +1,13 @@
 {% if streaming %}
 <div class="bg-white rounded-xl shadow-sm border p-6" id="summary-container" data-job-id="{{ job_id }}">
+    <div id="stream-status" class="text-center py-4">
+        <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-600 border-t-transparent"></div>
+        <p class="mt-2 text-gray-500">Analyzing video...</p>
+    </div>
     <div id="stream-metadata"></div>
     <div class="markdown-body mt-4">
         <div id="stream-content"></div>
     </div>
-    <div id="stream-error" class="text-red-500 font-medium"></div>
+    <div id="stream-error" class="text-red-500 font-medium p-4"></div>
 </div>
 {% endif %}

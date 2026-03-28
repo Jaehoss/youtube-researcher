@@ -41,22 +41,30 @@ document.body.addEventListener("htmx:afterSwap", function(event) {
     var content = document.getElementById("stream-content");
     var errorDiv = document.getElementById("stream-error");
 
+    var status = document.getElementById("stream-status");
+
     source.addEventListener("metadata", function(e) {
+        status.style.display = "none";
         metadata.innerHTML = e.data;
     });
 
     source.addEventListener("chunk", function(e) {
+        status.style.display = "none";
         content.innerHTML += e.data;
     });
 
     source.addEventListener("done", function(e) {
+        status.style.display = "none";
         content.innerHTML = e.data;
         source.close();
     });
 
     source.addEventListener("error", function(e) {
+        status.style.display = "none";
         if (e.data) {
             errorDiv.textContent = e.data;
+        } else {
+            errorDiv.textContent = "Connection error. Please try again.";
         }
         source.close();
     });
