@@ -2,7 +2,7 @@ fastapi
 uvicorn[standard]
 jinja2
 aiosqlite
-google-generativeai
+google-genai
 anthropic
 openai
 youtube-transcript-api==0.6.3

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from collections.abc import AsyncGenerator
-import google.generativeai as genai
+from google import genai
 import anthropic
 import openai
 
@@ -13,14 +13,16 @@ class LLMClient(ABC):
 
 class GeminiClient(LLMClient):
     def __init__(self, api_key: str, model: str = "gemini-3.1-pro"):
-        genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel(model)
+        self.client = genai.Client(api_key=api_key)
+        self.model = model
 
     async def summarize_stream(self, transcript, style, language, video_url):
         from app.prompts import build_prompt
         prompt = build_prompt(style, language, transcript, video_url)
-        response = await self.model.generate_content_async(prompt, stream=True)
-        async for chunk in response:
+        response = self.client.models.generate_content_stream(
+            model=self.model, contents=prompt
+        )
+        for chunk in response:
             if chunk.text:
                 yield chunk.text
 
