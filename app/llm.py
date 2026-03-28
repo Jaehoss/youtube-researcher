@@ -12,7 +12,7 @@ class LLMClient(ABC):
         ...
 
 class GeminiClient(LLMClient):
-    def __init__(self, api_key: str, model: str = "gemini-3.1-pro-preview"):
+    def __init__(self, api_key: str, model: str = "gemini-2.5-pro"):
         self.client = genai.Client(api_key=api_key)
         self.model = model
 
@@ -65,7 +65,7 @@ class OpenAIClient(LLMClient):
 def get_available_providers(gemini_key=None, anthropic_key=None, openai_key=None):
     providers = {}
     if gemini_key:
-        providers["gemini"] = "Gemini 3.1 Pro"
+        providers["gemini"] = "Gemini 2.5 Pro"
     if anthropic_key:
         providers["claude"] = "Claude Sonnet 4.6"
     if openai_key:
