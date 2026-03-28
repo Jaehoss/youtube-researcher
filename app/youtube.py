@@ -144,6 +144,40 @@ def _truncate_if_needed(formatted: str) -> str:
         formatted = formatted[:2_000_000] + "\n\n[Transcript truncated due to length]"
     return formatted
 
+
+async def download_audio(video_id: str) -> str:
+    """Download audio via yt-dlp. Returns path to audio file."""
+    import asyncio
+    import subprocess
+    import os
+
+    audio_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "audio")
+    os.makedirs(audio_dir, exist_ok=True)
+    output_path = os.path.join(audio_dir, f"{video_id}.m4a")
+
+    # Skip if already downloaded
+    if os.path.exists(output_path):
+        return output_path
+
+    def _download():
+        cmd = [
+            "yt-dlp",
+            "-f", "ba[ext=m4a]/ba",
+            "--cookies-from-browser", "chrome",
+            "--impersonate", "chrome",
+            "--remote-components", "ejs:github",
+            "--max-filesize", "50m",
+            "-o", output_path,
+            f"https://www.youtube.com/watch?v={video_id}",
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+        if not os.path.exists(output_path):
+            raise ValueError(f"Failed to download audio: {result.stderr[:200]}")
+        return output_path
+
+    return await asyncio.to_thread(_download)
+
+
 async def fetch_video_metadata(video_id: str, api_key: str) -> dict:
     url = "https://www.googleapis.com/youtube/v3/videos"
     params = {"part": "snippet,contentDetails", "id": video_id, "key": api_key}

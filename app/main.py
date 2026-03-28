@@ -14,7 +14,7 @@ from sse_starlette.sse import EventSourceResponse
 from app.database import Database
 from app.llm import get_available_providers, get_llm_client
 from app.models import SummarizeRequest, TagRequest
-from app.youtube import extract_video_id, fetch_transcript, fetch_video_metadata
+from app.youtube import extract_video_id, fetch_transcript, fetch_video_metadata, download_audio
 
 load_dotenv()
 
@@ -215,12 +215,21 @@ async def _run_summarize(job, video_id, youtube_url, style, language, provider, 
 
         metadata_task = asyncio.create_task(fetch_video_metadata(video_id, youtube_key))
 
-        # Try to fetch transcript, but don't fail if blocked — Gemini can watch the video directly
+        # Try to fetch transcript
         transcript = ""
+        audio_file = None
         try:
             transcript = await fetch_transcript(video_id, lang_code)
         except Exception:
-            pass  # Gemini will use the YouTube URL directly
+            # Transcript blocked — download audio and send to Gemini for understanding
+            if provider == "gemini":
+                try:
+                    audio_path = await download_audio(video_id)
+                    from google import genai as genai_mod
+                    g_client = genai_mod.Client(api_key=gemini_key)
+                    audio_file = g_client.files.upload(file=audio_path)
+                except Exception:
+                    pass  # Will try with just the prompt
 
         metadata = await metadata_task
         job.metadata = metadata
@@ -238,6 +247,10 @@ async def _run_summarize(job, video_id, youtube_url, style, language, provider, 
 
         import html as html_mod
         client = get_llm_client(provider, gemini_key, anthropic_key, openai_key)
+
+        # If we have an audio file, attach it to the Gemini client
+        if audio_file and hasattr(client, '_audio_file'):
+            client._audio_file = audio_file
 
         async for chunk in client.summarize_stream(transcript, style, lang_name, youtube_url):
             job.full_response += chunk

@@ -15,16 +15,20 @@ class GeminiClient(LLMClient):
     def __init__(self, api_key: str, model: str = "gemini-2.5-pro"):
         self.client = genai.Client(api_key=api_key)
         self.model = model
+        self._audio_file = None  # Set externally when audio fallback is used
 
     async def summarize_stream(self, transcript, style, language, video_url):
         from app.prompts import build_prompt
-        # Gemini can natively understand YouTube URLs — include it in the prompt
-        # so it can watch the video directly (visual + audio) alongside any transcript
         prompt = build_prompt(style, language, transcript, video_url)
-        if video_url:
-            prompt = f"YouTube video: {video_url}\n\n{prompt}"
+
+        if self._audio_file:
+            # Use uploaded audio file for accurate content understanding
+            contents = [self._audio_file, prompt]
+        else:
+            contents = prompt
+
         response = self.client.models.generate_content_stream(
-            model=self.model, contents=prompt
+            model=self.model, contents=contents
         )
         for chunk in response:
             if chunk.text:

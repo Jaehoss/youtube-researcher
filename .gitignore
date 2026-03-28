@@ -2,5 +2,6 @@
 .venv/
 __pycache__/
 data/*.db
+data/audio/
 *.pyc
 .pytest_cache/
